@@ -22,6 +22,27 @@ _read_action()
 while :
 do
     action=`_read_action`
-    echo $input
+
+    case $action in 
+        W | w)
+            echo "UP"
+            ;;
+        S | s)
+            echo "DOWN"
+            ;;
+        A | a)
+            echo "LEFT"
+            ;;
+        D | d)
+            echo "RIGHT"
+            ;;
+        Q | q)
+            echo "QUIT"
+            break
+            ;;
+        *)
+            echo "HEHE"
+            ;;
+    esac
 
 done
