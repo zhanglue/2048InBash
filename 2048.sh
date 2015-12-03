@@ -81,14 +81,15 @@ _generate_new_block()
 ################################################################################
 _initialise()
 {
-    blockStatus=( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
+    #blockStatus=( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
     #blockStatus=( 0 1 1 1 1 0 1 0 0 1 1 1 1 1 1 0 )
+    blockStatus=( 1 0 1 2 4 2 2 2 0 1 0 0 1 1 2 0 )
 
-    local i=0
-    for ((; i < $INITIAL_BLOCK_NUM; ++i))
-    do
-        _generate_new_block
-    done
+    #local i=0
+    #for ((; i < $INITIAL_BLOCK_NUM; ++i))
+    #do
+    #    _generate_new_block
+    #done
 
 }
 
@@ -146,10 +147,90 @@ _show()
 }
 
 ################################################################################
+## PUSH BLOCKS
+################################################################################
+_push_blocks()
+{
+    local processSeQ=( "0 1 2 3" "4 5 6 7" "8 9 10 11" "12 13 14 15" )
+    local numSeQ=()
+    local numSeQResult=()
+    local i=""
+    local j=0
+    local curIndex=0
+    local hasZeroFlag=0
+    local singleSuccessFlag=0
+    local totalSuccessFlag=0
+
+    for singleSeQ in "${processSeQ[@]}"
+    do
+        numSeQ=()
+        singleSuccessFlag=0
+        hasZeroFlag=0
+        for i in $singleSeQ
+        do
+            if (( ${blockStatus[$i]} )); then
+                numSeQ+=( ${blockStatus[$i]} )
+                if (( $hasZeroFlag )); then
+                    singleSuccessFlag=1
+                fi
+            else
+                hasZeroFlag=1
+            fi
+        done
+
+        curIndex=0
+        numSeQResult=()
+        while (( $curIndex < ${#numSeQ[@]} ))
+        do
+            if (( $curIndex == $(( ${#numSeQ[@]} - 1 )) )); then
+                numSeQResult+=( $(( ${numSeQ[$curIndex]}     )) )
+                break
+            fi
+
+            if (( ${numSeQ[$curIndex]} == ${numSeQ[$(( $curIndex + 1 ))]} )); then
+                numSeQResult+=( $(( ${numSeQ[$curIndex]} * 2 )) )
+                singleSuccessFlag=1
+                curIndex=$(( $curIndex + 2 ))
+            else
+                numSeQResult+=( $(( ${numSeQ[$curIndex]}     )) )
+                curIndex=$(( $curIndex + 1 ))
+            fi
+        done
+
+        curIndex=${#numSeQResult[@]}
+        while (( $curIndex < 4 ))
+        do
+            numSeQResult+=( 0 )
+            curIndex=$(( $curIndex + 1 ))
+        done
+
+        if (( $singleSuccessFlag )); then
+            j=0
+            totalSuccessFlag=1
+            for i in $singleSeQ
+            do
+                blockStatus[$i]=${numSeQResult[$j]}
+                j=$(( $j + 1 ))
+            done
+        fi
+
+    done
+
+    eval $1=$totalSuccessFlag
+}
+
+################################################################################
 ## MAIN
 ################################################################################
 
 _initialise
+_show
+result=0
+_push_blocks result
+echo $result
+_show
+
+exit 0
 
 while :
 do
