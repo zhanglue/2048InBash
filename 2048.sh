@@ -11,8 +11,141 @@
 ################################################################################
 ## CONST VARIABLES
 ################################################################################
+MATRIX_DEGREE=4
 INITIAL_BLOCK_NUM=4
 OUTPUT_SEPERATOR="########################################"
+
+################################################################################
+## INITIALISE
+################################################################################
+_initialise()
+{
+    local i=0
+    local j=0
+    local tmpArrAAA=()
+    local tmpArrBBB=()
+
+    tmpArrAAA=()
+    for (( i=0; i<${MATRIX_DEGREE}; ++i ))
+    do
+        tmpArrBBB=()
+        for (( j=0; j<${MATRIX_DEGREE}; ++j ))
+        do 
+            tmpArrBBB+=( $(( $i + $j * ${MATRIX_DEGREE} )) )
+        done
+        tmpArrAAA+=( "${tmpArrBBB[*]}" )
+    done
+    TRAVERSE_ARRAY_UP=( "${tmpArrAAA[@]}" )
+
+    tmpArrAAA=()
+    for (( i=$(( ${MATRIX_DEGREE} - 1 )); i>=0; --i ))
+    do
+        tmpArrBBB=()
+        for (( j=$(( ${MATRIX_DEGREE} - 1 )); j>=0; --j ))
+        do 
+            tmpArrBBB+=( $(( $i + $j * ${MATRIX_DEGREE} )) )
+        done
+        tmpArrAAA+=( "${tmpArrBBB[*]}" )
+    done
+    TRAVERSE_ARRAY_DOWN=( "${tmpArrAAA[@]}" )
+
+    tmpArrAAA=()
+    for (( i=0; i<${MATRIX_DEGREE}; ++i ))
+    do
+        tmpArrBBB=()
+        for (( j=0; j<${MATRIX_DEGREE}; ++j ))
+        do 
+            tmpArrBBB+=( $(( $i * ${MATRIX_DEGREE} + $j )) )
+        done
+        tmpArrAAA+=( "${tmpArrBBB[*]}" )
+    done
+    TRAVERSE_ARRAY_LEFT=( "${tmpArrAAA[@]}" )
+
+    tmpArrAAA=()
+    for (( i=$(( ${MATRIX_DEGREE} - 1 )); i>=0; --i ))
+    do
+        tmpArrBBB=()
+        for (( j=$(( ${MATRIX_DEGREE} - 1 )); j>=0; --j ))
+        do 
+            tmpArrBBB+=( $(( $i * ${MATRIX_DEGREE} + $j )) )
+        done
+        tmpArrAAA+=( "${tmpArrBBB[*]}" )
+    done
+    TRAVERSE_ARRAY_RIGHT=( "${tmpArrAAA[@]}" )
+
+    processSeQ=( )
+    stepResult=0
+
+    blockStatus=( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
+
+    local tmp=$INITIAL_BLOCK_NUM
+    while (( $tmp ))
+    do
+        _generate_new_block
+        tmp=$(( $tmp - 1 ))
+    done
+}
+
+################################################################################
+## SHOW STATUS IN TEXT
+################################################################################
+_show_status_in_text()
+{
+    local i=0
+    local j=0
+    local rowString=""
+    clear
+    echo ""
+    echo $OUTPUT_SEPERATOR
+    for (( i=0; i < 4; ++i ))
+    do
+        rowString=""
+        for (( j=0; j < 4; ++j ))
+        do
+            rowString="$rowString ${blockStatus[$(( $i * 4 + $j ))]}"
+        done
+        echo $rowString
+    done
+    echo $OUTPUT_SEPERATOR
+}
+
+################################################################################
+## READ ACTION
+################################################################################
+_read_action()
+{
+    local inputKey=""
+    read -sn 1 -t 1 inputKey 
+    if [[ -z $inputKey ]]; then
+        curAction=KEEP
+    fi
+
+    case $inputKey in 
+        W | w)
+            curAction="PUSH"
+            processSeQ=( "${TRAVERSE_ARRAY_UP[@]}" )
+            ;;
+        S | s)
+            curAction="PUSH"
+            processSeQ=( "${TRAVERSE_ARRAY_DOWN[@]}" )
+            ;;
+        A | a)
+            curAction="PUSH"
+            processSeQ=( "${TRAVERSE_ARRAY_LEFT[@]}" )
+            ;;
+        D | d)
+            curAction="PUSH"
+            processSeQ=( "${TRAVERSE_ARRAY_RIGHT[@]}" )
+            ;;
+        Q | q)
+            curAction="QUIT"
+            break
+            ;;
+        *)
+            curAction="HEHE"
+            ;;
+    esac
+}
 
 ################################################################################
 ## BLANK_BLOCKS_COUNT
@@ -61,89 +194,12 @@ _solve_position_at()
 _generate_new_block()
 {
     local blankBlocksCount=`_blank_blocks_count`
-
     if (( ! $blankBlocksCount )); then
-        echo ""
-        echo "~YOU HAS ARRIVED THE END~"
-        echo ""
-        exit 0
+        return
     fi
-
     local newBlockPositionWide=$(( `_get_a_random_number 2` % $blankBlocksCount ))
-
     local newBlockPositionNarrow=`_solve_position_at $newBlockPositionWide`
-
     blockStatus[$newBlockPositionNarrow]=$((`_get_a_random_number 1` % 2 + 1 ))
-}
-
-################################################################################
-## INITIALISE
-################################################################################
-_initialise()
-{
-    #blockStatus=( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
-    #blockStatus=( 0 1 1 1 1 0 1 0 0 1 1 1 1 1 1 0 )
-    blockStatus=( 1 0 1 2 4 2 2 2 0 1 0 0 1 1 2 0 )
-
-    #local i=0
-    #for ((; i < $INITIAL_BLOCK_NUM; ++i))
-    #do
-    #    _generate_new_block
-    #done
-
-}
-
-################################################################################
-## READ ACTION
-################################################################################
-_read_action()
-{
-    local input=""
-    read -sn 1 -t 1 input 
-    echo $input
-}
-
-################################################################################
-## SHOW
-################################################################################
-_show()
-{
-    local i=0
-    local j=0
-    local rowString=""
-    echo ""
-    echo $OUTPUT_SEPERATOR
-    for (( i=0; i < 4; ++i ))
-    do
-        rowString=""
-        for (( j=0; j < 4; ++j ))
-        do
-            rowString="$rowString ${blockStatus[$(( $i * 4 + $j ))]}"
-        done
-        echo $rowString
-    done
-    case $curAction in 
-        W | w)
-            echo "UP"
-            ;;
-        S | s)
-            echo "DOWN"
-            ;;
-        A | a)
-            echo "LEFT"
-            ;;
-        D | d)
-            echo "RIGHT"
-            ;;
-        Q | q)
-            echo "QUIT"
-            break
-            ;;
-        *)
-            echo "HEHE"
-            ;;
-    esac
-    echo $OUTPUT_SEPERATOR
 }
 
 ################################################################################
@@ -151,7 +207,7 @@ _show()
 ################################################################################
 _push_blocks()
 {
-    local processSeQ=( "0 1 2 3" "4 5 6 7" "8 9 10 11" "12 13 14 15" )
+    local executeFlag=$1
     local numSeQ=()
     local numSeQResult=()
     local i=""
@@ -205,18 +261,61 @@ _push_blocks()
         done
 
         if (( $singleSuccessFlag )); then
-            j=0
             totalSuccessFlag=1
-            for i in $singleSeQ
-            do
-                blockStatus[$i]=${numSeQResult[$j]}
-                j=$(( $j + 1 ))
-            done
+            if (( $executeFlag )); then
+                j=0
+                for i in $singleSeQ
+                do
+                    blockStatus[$i]=${numSeQResult[$j]}
+                    j=$(( $j + 1 ))
+                done
+            fi
         fi
-
     done
 
-    eval $1=$totalSuccessFlag
+    eval $2=$totalSuccessFlag
+}
+
+################################################################################
+## NO WAY ELSE TO GO
+################################################################################
+_no_way_else_to_go()
+{
+    if (( `_blank_blocks_count` )); then
+        echo 0
+        return
+    fi
+
+    local testArray=( "${TRAVERSE_ARRAY_UP[@]}"    \
+                      "${TRAVERSE_ARRAY_DOWN[@]}"  \
+                      "${TRAVERSE_ARRAY_LEFT[@]}"  \
+                      "${TRAVERSE_ARRAY_RIGHT[@]}" )
+
+    local tmpStepResult=0
+    local step=""
+    local cnt=0
+
+    processSeQ=()
+
+    for step in "${testArray[@]}"
+    do
+        cnt=$(( $cnt + 1 ))
+        if (( $cnt % 4 )); then
+            processSeQ+=( "$step" )
+            continue
+        fi
+
+        _push_blocks 0 tmpStepResult
+
+        if (( $tmpStepResult )); then
+            echo 0
+            return
+        fi
+
+        processSeQ=()
+    done
+
+    echo 1
 }
 
 ################################################################################
@@ -224,18 +323,35 @@ _push_blocks()
 ################################################################################
 
 _initialise
-_show
-result=0
-_push_blocks result
-echo $result
-_show
-
-exit 0
+_show_status_in_text
 
 while :
 do
-    curAction=`_read_action`
-    _show
+    _read_action
+    _show_status_in_text
 
-    _generate_new_block
+    case ${curAction} in
+        "KEEP" )
+            continue
+            ;;
+        "QUIT" )
+            break
+            ;;
+        "PUSH" )
+            _push_blocks 1 stepResult
+
+            if (( ! $stepResult )); then
+                continue
+            fi
+
+            _generate_new_block
+            _show_status_in_text
+
+            if (( `_no_way_else_to_go` )); then
+                exit
+            fi
+            ;;
+    esac
 done
+
+exit 0
